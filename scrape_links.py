@@ -25,8 +25,8 @@ def dbConnect():
 
 def getDriver():
     opts = FirefoxOptions()
-    opts.add_argument("--headless")
-    driver = webdriver.Firefox(firefox_options=opts)
+    # opts.add_argument("--headless")
+    driver = webdriver.Firefox(options=opts)
     return driver
 
 
@@ -35,30 +35,34 @@ def log_in():
         driver.get(config.MAIN_URL)
         sleep(2)
         email, password = config.ACCOUNTS[account_id]
-        email_input = driver.find_element_by_id("email")
+        email_input = driver.find_element(By.ID,"email")
         email_input.send_keys(email)
         sleep(0.5)
-        password_input = driver.find_element_by_id("pass")
+        password_input = driver.find_element(By.ID,"pass")
         password_input.send_keys(password)
         sleep(0.5)
-        login_button = driver.find_element_by_xpath("//*[@type='submit']")
+        login_button = driver.find_element(By.XPATH,"//*[@type='submit']")
         login_button.click()
         print("Successfully logged in! (sleep for 3 secs)")
         sleep(3)
     except Exception as e:
         print('Some exception occurred while trying to find username or password field')
         print(e)
+    exit
 
 
 def scrape_item_links(category):
-    marketplace_button = driver.find_element_by_xpath(
-        '//span[contains(text(), "Marketplace")]')
-    marketplace_button.click()
+    """
+    """
+    # marketplace_button = driver.find_element(By.ID,
+        # '//span[contains(text(), "Marketplace")]')
+    # marketplace_button.click()
+    driver.get("https://www.facebook.com/marketplace/?ref=app_tab")
     # wait until new page loaded
     sleep(5)
-    element = driver.find_element_by_xpath(
-        '//span[contains(text(), "{}")]'.format(category))
-    element.click()
+    element = driver.find_element(By.XPATH,
+        '/html/body/div[1]/div[1]/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div[2]/div/div/div/div/div'.format(category))
+    # element.click()
     driver.implicitly_wait(5)
     print("scrolling")
     for _ in range(100):
@@ -69,7 +73,7 @@ def scrape_item_links(category):
         except:
             print("exception while scroll")
             pass
-    items_wrapper_list = driver.find_elements_by_xpath(
+    items_wrapper_list = driver.find_elements(By.XPATH,
         "//div[contains(@class, 'kbiprv82')]")
     full_items_list = [wrapper.find_element_by_tag_name(
         'a') for wrapper in items_wrapper_list]
@@ -98,8 +102,10 @@ if __name__ == '__main__':
     dbclient = dbConnect()
     driver = getDriver()
     log_in()
+    
     for category in categories:
         print("Processing {}".format(category))
         driver.get(config.MAIN_URL)
         scrape_item_links(category)
+    sleep(10)
     driver.quit()
