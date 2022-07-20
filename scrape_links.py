@@ -61,43 +61,50 @@ def scrape_item_links(category):
     # wait until new page loaded
     sleep(5)
     element = driver.find_element(By.XPATH,
-        '/html/body/div[1]/div[1]/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div[2]/div/div/div/div/div'.format(category))
+        '/html/body/div[1]/div[1]/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div[2]/div/div/div/div/div')
     # element.click()
     driver.implicitly_wait(5)
     print("scrolling")
-    for _ in range(100):
+    for _ in range(1):
         try:
             driver.execute_script(
                 "window.scrollTo(0, document.body.scrollHeight);")
-            sleep(1)
+            sleep(0.5)
         except:
             print("exception while scroll")
-            pass
     items_wrapper_list = driver.find_elements(By.XPATH,
-        "//div[contains(@class, 'kbiprv82')]")
-    full_items_list = [wrapper.find_element_by_tag_name(
-        'a') for wrapper in items_wrapper_list]
+        f'//div/div[contains(@class, "kbiprv82")]')
+    
+    for element in items_wrapper_list:
+        element.click()
 
-    for item in full_items_list:
-        url = item.get_attribute('href')
-        url = url.split('?')[0]
-        
+        titleElements = None
         try:
-            with dbclient.cursor() as cur:
-                sql = "INSERT INTO link (url, category) VALUES('{}', '{}')".format(
-                    url, category)
-                cur.execute(sql)
-                dbclient.commit()
-                pid = cur.lastrowid
-                print("Insert link: {}".format(pid))
-        except pymysql.MySQLError as e:
-            print("ERROR when insert")
-            print(e)
+            titleElements = driver.find_elements(
+                    By.XPATH,
+                    "/html/body/div[1]/div/div[1]/div/div[4]/div/div/div/div/div/div/div/div/div/div/div/div/div/div//span[string-length(text()) > 0]"
+            )
+        except:
+            print("no title")
+        print("=="*100)
+        title = titleElements[0].text
+        price = titleElements[1].text
+
+
+        data = {
+            "title": title,
+            "price": price,
+        }
+        print(data)
+        # sleep(1)
+        driver.execute_script("history.back();")
+        sleep(2)
+        #return
+       
 
 
 if __name__ == '__main__':
-    categories = ["Vehicles", "Entertainment",
-                  "Clothing", "Electronics", "Office supplies"]
+    categories = ["Vehicles"]
 
     dbclient = dbConnect()
     driver = getDriver()
@@ -107,5 +114,6 @@ if __name__ == '__main__':
         print("Processing {}".format(category))
         driver.get(config.MAIN_URL)
         scrape_item_links(category)
-    sleep(10)
+        print("Finish")
+    sleep(1)
     driver.quit()
